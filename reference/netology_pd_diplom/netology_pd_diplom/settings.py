@@ -91,6 +91,11 @@ DATABASES = {
 
 
 }
+redis_host = os.environ.get('REDIS_HOST', 'localhost')
+redis_port = os.environ.get('REDIS_PORT', '6379')
+CELERY_BROKER_URL = f'redis://{redis_host}:{redis_port}/0'
+CELERY_RESULT_BACKEND = f'redis://{redis_host}:{redis_port}/1'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
