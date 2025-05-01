@@ -22,6 +22,8 @@ from backend.serializers import UserSerializer, CategorySerializer, ShopSerializ
     OrderItemSerializer, OrderSerializer, ContactSerializer
 from backend.signals import new_user_registered, new_order
 
+from backend.tasks import do_import
+
 
 class RegisterAccount(APIView):
     """
@@ -791,3 +793,30 @@ class PartnerExport(APIView):
         response = HttpResponse(yaml_data, content_type='application/x-yaml')
         response['Content-Disposition'] = 'attachment; filename=export.yaml'
         return response
+
+class StartImport(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return JsonResponse({'Status': False, 'Error': 'Log in required'}, status=403)
+        if request.user.type != 'shop':
+            return JsonResponse({'Status': False, 'Error': 'Только для магазинов'}, status=403)
+
+        file = request.FILES.get('file')
+        url = request.data.get('url')
+
+        try:
+            if file:
+                stream = file.read()
+            elif url:
+                validate_url = URLValidator()
+                validate_url(url)
+                stream = get(url).content
+            else:
+                return JsonResponse({'Status': False, 'Errors': 'Укажите URL или загрузите файл'})
+
+            data = yaml.load(stream, Loader=yaml.SafeLoader)
+            do_import.delay(request.user.id, data)
+
+            return JsonResponse({'Status': True, 'message': 'Импорт запущен'})
+        except Exception as e:
+            return JsonResponse({'Status': False, 'Errors': str(e)})

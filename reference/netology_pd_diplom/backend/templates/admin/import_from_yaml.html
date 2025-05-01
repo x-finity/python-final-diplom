@@ -1,0 +1,18 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+  <h1>{{ title }}</h1>
+
+  <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {{ form.as_p }}
+
+      {# ← обязательные скрытые поля #}
+      <input type="hidden" name="action" value="import_from_yaml">
+      {% for id in selected_ids %}
+        <input type="hidden" name="_selected_action" value="{{ id }}">
+      {% endfor %}
+
+      <button type="submit" name="apply" class="default">Импортировать</button>
+  </form>
+{% endblock %}
